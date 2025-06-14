@@ -10,20 +10,14 @@ public class Response implements Serializable {
   @Serial private static final long serialVersionUID = 6349685376893778396L;
   private final String message;
   private final List<Ticket> tickets;
-  private final boolean stopFlag;
 
   public Response(String message, List<Ticket> tickets, boolean stopFlag) {
     this.message = message;
     this.tickets = tickets != null ? tickets : Collections.emptyList();
-    this.stopFlag = stopFlag;
   }
 
   public Response(String message) {
     this(message, null, false);
-  }
-
-  public Response(String message, boolean stopFlag) {
-    this(message, null, stopFlag);
   }
 
   public Response(String message, List<Ticket> tickets) {
@@ -36,9 +30,5 @@ public class Response implements Serializable {
 
   public List<Ticket> getTickets() {
     return tickets;
-  }
-
-  public boolean isStopFlag() {
-    return stopFlag;
   }
 }

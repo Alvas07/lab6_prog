@@ -43,7 +43,6 @@ public class CommandManager {
     commandList.put("update", new UpdateCommand(collectionManager, scriptManager, scannerManager));
     commandList.put("remove_by_id", new RemoveByIdCommand(collectionManager));
     commandList.put("clear", new ClearCommand(collectionManager));
-    commandList.put("exit", new ExitCommand());
     commandList.put("remove_head", new RemoveHeadCommand(collectionManager));
     commandList.put(
         "remove_lower", new RemoveLowerCommand(collectionManager, scriptManager, scannerManager));

@@ -3,17 +3,16 @@ package client;
 import common.exceptions.CommandExecuteException;
 import common.exceptions.UnknownCommandException;
 import common.managers.*;
+import common.network.ObjectDecoder;
 import common.network.ObjectEncoder;
 import common.network.Request;
 import common.network.Response;
 import java.io.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -24,7 +23,6 @@ public class UDPClient implements ClientControl {
   private boolean isRunning = true;
   private final CommandManager commandManager;
   private final ScriptManager scriptManager;
-  private boolean limitFlag = true;
 
   public UDPClient(
       String host, int port, CommandManager commandManager, ScriptManager scriptManager)
@@ -35,67 +33,49 @@ public class UDPClient implements ClientControl {
   }
 
   public void runClient() {
-    try (DatagramChannel channel = DatagramChannel.open();
-        Selector selector = Selector.open()) {
-      channel.configureBlocking(false);
-      channel.register(selector, SelectionKey.OP_READ);
+    try (DatagramSocket socket = new DatagramSocket()) {
+      socket.setSoTimeout(TIMEOUT_MS);
       System.out.println("[CLIENT] Установлено подключение к серверу: " + serverAddress);
-      spinLoop(channel, selector);
+      spinLoop(socket);
     } catch (IOException e) {
       System.err.println("[CLIENT] Ошибка при подключении к серверу.");
     }
   }
 
-  private void sendRequest(Request request, DatagramChannel channel, Selector selector)
-      throws IOException {
+  private void sendRequest(Request request, DatagramSocket socket) throws IOException {
     try {
       ByteBuffer sendBuffer = ObjectEncoder.encodeObject(request);
-      channel.send(sendBuffer, serverAddress);
+      DatagramPacket sendPacket =
+          new DatagramPacket(sendBuffer.array(), sendBuffer.array().length, serverAddress);
+      socket.send(sendPacket);
 
-      if (selector.select(100) > 0) {
-        Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-        while (keys.hasNext()) {
-          SelectionKey key = keys.next();
-          keys.remove();
+      ByteBuffer receiveBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+      DatagramPacket receivePacket =
+          new DatagramPacket(receiveBuffer.array(), receiveBuffer.array().length);
+      try {
+        socket.receive(receivePacket);
+        if (receivePacket.getData() != null) {
+          Response response =
+              (Response) ObjectDecoder.decodeObject(ByteBuffer.wrap(receivePacket.getData()));
 
-          if (key.isReadable()) {
-            ByteBuffer receiveBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-            long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < TIMEOUT_MS) {
-              SocketAddress responseAddress = channel.receive(receiveBuffer);
-              if (responseAddress != null) {
-                receiveBuffer.flip();
-                ByteArrayInputStream bais =
-                    new ByteArrayInputStream(receiveBuffer.array(), 0, receiveBuffer.limit());
-                ObjectInputStream ois = new ObjectInputStream(bais);
-                Response response = (Response) ois.readObject();
+          System.out.println("[CLIENT] Ответ: " + response.getMessage());
 
-                System.out.println("[CLIENT] Ответ: " + response.getMessage());
-
-                if (response.getTickets() != null && !response.getTickets().isEmpty()) {
-                  response.getTickets().forEach(System.out::println);
-                }
-
-                if (response.isStopFlag()) {
-                  stopClient();
-                }
-                limitFlag = false;
-                break;
-              }
-            }
+          if (response.getTickets() != null && !response.getTickets().isEmpty()) {
+            response.getTickets().forEach(System.out::println);
           }
         }
+      } catch (SocketTimeoutException e) {
+        System.err.println("[CLIENT] Превышено время ожидания от сервера.");
+      } catch (IOException e) {
+        System.err.println("[CLIENT] Ошибка при передаче команды: " + e.getMessage());
       }
 
-      if (limitFlag) {
-        System.out.println("[CLIENT] Превышено время ожидания ответа от сервера.");
-      }
-    } catch (ClassNotFoundException e) {
-      System.out.println("[CLIENT] Ошибка при передаче команды: " + e.getMessage());
+    } catch (Exception e) {
+      System.err.println("[CLIENT] Ошибка при передаче команды: " + e.getMessage());
     }
   }
 
-  private void spinLoop(DatagramChannel channel, Selector selector) {
+  private void spinLoop(DatagramSocket socket) {
     Scanner scanner = new Scanner(System.in);
 
     try {
@@ -109,14 +89,20 @@ public class UDPClient implements ClientControl {
             if (parts.length != 2) {
               System.out.println("[CLIENT] Команда принимает один обязательный аргумент.");
             } else {
-              executeScript(parts[1], channel, selector);
+              executeScript(parts[1], socket);
+            }
+          } else if (parts[0].equals("exit")) {
+            if (parts.length != 1) {
+              System.out.println("[CLIENT] Команда не принимает аргументов.");
+            } else {
+              stopClient();
             }
           } else {
             request = commandManager.convertInputToCommandRequest(commandLine);
           }
 
           if (request != null) {
-            sendRequest(request, channel, selector);
+            sendRequest(request, socket);
           }
         } catch (IOException e) {
           stopClient();
@@ -130,7 +116,7 @@ public class UDPClient implements ClientControl {
     }
   }
 
-  private void executeScript(String fileName, DatagramChannel channel, Selector selector) {
+  private void executeScript(String fileName, DatagramSocket socket) {
     FileManager fileManager = new FileManager(fileName);
     ScannerManager scannerManager = scriptManager.getScannerManager();
     boolean recursionFlag = false;
@@ -171,7 +157,7 @@ public class UDPClient implements ClientControl {
           request = commandManager.convertInputToCommandRequest(input);
 
           if (request != null) {
-            sendRequest(request, channel, selector);
+            sendRequest(request, socket);
           }
         } catch (UnknownCommandException | CommandExecuteException | IOException e) {
           System.out.println("[CLIENT] Непредвиденная ошибка: " + e.getMessage());

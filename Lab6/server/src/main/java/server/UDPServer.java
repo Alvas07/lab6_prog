@@ -4,6 +4,7 @@ import common.exceptions.FileWriteException;
 import common.managers.CollectionManager;
 import common.managers.CommandManager;
 import common.managers.FileManager;
+import common.network.ObjectDecoder;
 import common.network.ObjectEncoder;
 import common.network.Request;
 import common.network.Response;
@@ -21,11 +22,14 @@ import org.apache.logging.log4j.Logger;
 
 public class UDPServer {
   private final int BUFFER_SIZE = 65535;
+  private final int SELECTOR_NUM = 100;
   private final CommandManager commandManager;
   private final CollectionManager collectionManager;
   private final FileManager fileManager;
   private final ExecutorService requestPool = Executors.newCachedThreadPool();
   private static final Logger logger = LogManager.getLogger();
+  private final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+  private boolean isRunning = true;
 
   public UDPServer(
       CommandManager commandManager, CollectionManager collectionManager, FileManager fileManager) {
@@ -45,13 +49,13 @@ public class UDPServer {
 
       ByteBuffer receiveBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
-      while (true) {
+      while (isRunning) {
         if (isConsoleInput()) {
           shutdown(selector, channel);
           return;
         }
 
-        if (selector.select(100) == 0) continue;
+        if (selector.select(SELECTOR_NUM) == 0) continue;
 
         Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
         while (keys.hasNext()) {
@@ -66,11 +70,7 @@ public class UDPServer {
                   (InetSocketAddress) clientChannel.receive(receiveBuffer);
 
               if (clientAddress != null) {
-                receiveBuffer.flip();
-                ObjectInputStream ois =
-                    new ObjectInputStream(
-                        new ByteArrayInputStream(receiveBuffer.array(), 0, receiveBuffer.limit()));
-                Request request = (Request) ois.readObject();
+                Request request = (Request) ObjectDecoder.decodeObject(receiveBuffer);
                 logger.info("Сервер получил запрос с командой " + request.getCommandName());
 
                 Response response = commandManager.executeRequest(request);
@@ -90,7 +90,6 @@ public class UDPServer {
 
   private boolean isConsoleInput() throws IOException {
     if (System.in.available() > 0) {
-      BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       String commandName = in.readLine();
       if (commandName == null) {
         commandName = "shutdown";
@@ -136,5 +135,6 @@ public class UDPServer {
     selector.close();
     channel.close();
     requestPool.shutdown();
+    isRunning = false;
   }
 }
