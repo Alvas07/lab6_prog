@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 public class UDPServer {
   private final int BUFFER_SIZE = 65535;
-  private final int SELECTOR_NUM = 100;
+  private final int SELECTOR_TIMEOUT = 100;
   private final CommandManager commandManager;
   private final CollectionManager collectionManager;
   private final FileManager fileManager;
@@ -55,7 +55,7 @@ public class UDPServer {
           return;
         }
 
-        if (selector.select(SELECTOR_NUM) == 0) continue;
+        if (selector.select(SELECTOR_TIMEOUT) == 0) continue;
 
         Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
         while (keys.hasNext()) {
