@@ -25,6 +25,69 @@
         <person/>
     </ticket>
     <ticket>
+        <id>5</id>
+        <name>БИЛЕТ</name>
+        <coordinates>
+            <cx>2.0</cx>
+            <cy>200</cy>
+        </coordinates>
+        <creationDate>2025-06-14</creationDate>
+        <price>100.0</price>
+        <type>VIP</type>
+        <person/>
+    </ticket>
+    <ticket>
+        <id>6</id>
+        <name>БИЛЕТ</name>
+        <coordinates>
+            <cx>2.0</cx>
+            <cy>200</cy>
+        </coordinates>
+        <creationDate>2025-06-14</creationDate>
+        <price>100.0</price>
+        <type>VIP</type>
+        <person>
+            <height>12.0</height>
+            <weight>12</weight>
+            <passportID>12</passportID>
+            <location/>
+        </person>
+    </ticket>
+    <ticket>
+        <id>7</id>
+        <name>БИЛЕТ</name>
+        <coordinates>
+            <cx>2.0</cx>
+            <cy>200</cy>
+        </coordinates>
+        <creationDate>2025-06-14</creationDate>
+        <price>100.0</price>
+        <type>VIP</type>
+        <person>
+            <height>12.0</height>
+            <weight>12</weight>
+            <passportID>12</passportID>
+            <location/>
+        </person>
+    </ticket>
+    <ticket>
+        <id>8</id>
+        <name>БИЛЕТ</name>
+        <coordinates>
+            <cx>2.0</cx>
+            <cy>200</cy>
+        </coordinates>
+        <creationDate>2025-06-14</creationDate>
+        <price>100.0</price>
+        <type>VIP</type>
+        <person>
+            <height>12.0</height>
+            <weight>12</weight>
+            <passportID>12</passportID>
+            <location/>
+        </person>
+    </ticket>
+    <ticket>
         <id>3</id>
         <name>1251</name>
         <coordinates>

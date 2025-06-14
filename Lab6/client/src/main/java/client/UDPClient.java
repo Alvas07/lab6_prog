@@ -152,18 +152,23 @@ public class UDPClient implements ClientControl {
         }
 
         System.out.println("[CLIENT] Выполнение команды " + commandParts[0] + ":");
-        try {
-          Request request = null;
-          request = commandManager.convertInputToCommandRequest(input);
 
-          if (request != null) {
-            sendRequest(request, socket);
+        if (commandParts[0].equalsIgnoreCase("execute_script")) {
+          executeScript(commandParts[1], socket);
+        } else {
+          try {
+            Request request = null;
+            request = commandManager.convertInputToCommandRequest(input);
+
+            if (request != null) {
+              sendRequest(request, socket);
+            }
+          } catch (UnknownCommandException | CommandExecuteException | IOException e) {
+            System.out.println("[CLIENT] Непредвиденная ошибка: " + e.getMessage());
+          } catch (NoSuchElementException e) {
+            currentScanner = new Scanner(System.in);
+            scannerManager.setScanner(currentScanner);
           }
-        } catch (UnknownCommandException | CommandExecuteException | IOException e) {
-          System.out.println("[CLIENT] Непредвиденная ошибка: " + e.getMessage());
-        } catch (NoSuchElementException e) {
-          currentScanner = new Scanner(System.in);
-          scannerManager.setScanner(currentScanner);
         }
       }
     } catch (FileNotFoundException e) {
