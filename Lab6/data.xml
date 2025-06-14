@@ -4,12 +4,29 @@
         <id>1</id>
         <name>a</name>
         <coordinates>
-            <cx>1</cx>
+            <cx>1.0</cx>
             <cy>1</cy>
         </coordinates>
         <creationDate>2010-05-25</creationDate>
-        <price>1</price>
-        <type>budgetary</type>
+        <price>1.0</price>
+        <type>BUDGETARY</type>
         <person/>
+    </ticket>
+    <ticket>
+        <id>2</id>
+        <name>3t</name>
+        <coordinates>
+            <cx>151.0</cx>
+            <cy>12</cy>
+        </coordinates>
+        <creationDate>2025-06-14</creationDate>
+        <price>12512.0</price>
+        <type>VIP</type>
+        <person>
+            <height>25.0</height>
+            <weight>151</weight>
+            <passportID>125</passportID>
+            <location/>
+        </person>
     </ticket>
 </list>
